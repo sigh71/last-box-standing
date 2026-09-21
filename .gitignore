@@ -25,9 +25,6 @@ backups/
 *.log
 npm-debug.log*
 
-# Claude Code: shared config is committed, personal overrides are not
-.claude/settings.local.json
-
 # Editor / OS
 .DS_Store
 .vscode/*
@@ -36,3 +33,6 @@ npm-debug.log*
 
 # Personal notes that stay out of the public repo (e.g. DEPLOY.local.md)
 *.local.md
+
+# Claude Code config is per person, not part of the project
+.claude/
