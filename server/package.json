@@ -1,0 +1,30 @@
+{
+  "name": "@last-box-standing/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "tsx watch --env-file-if-exists=../.env src/index.ts",
+    "start": "tsx --env-file-if-exists=../.env src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx --env-file-if-exists=../.env src/db/migrate.ts",
+    "db:seed": "tsx --env-file-if-exists=../.env src/db/seed.ts"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.13.7",
+    "arctic": "^3.1.4",
+    "better-sqlite3": "^12.2.0",
+    "drizzle-orm": "^0.38.3",
+    "fast-xml-parser": "^5.10.1",
+    "hono": "^4.6.16"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.10.5",
+    "drizzle-kit": "^0.30.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}

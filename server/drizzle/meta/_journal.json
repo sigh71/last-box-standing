@@ -1,0 +1,118 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1784549414924,
+      "tag": "0000_bored_strong_guy",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1784811200097,
+      "tag": "0001_big_serpent_society",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1784897308421,
+      "tag": "0002_bizarre_micromax",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1784906319036,
+      "tag": "0003_add_nominate_eliminate",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1784906337777,
+      "tag": "0004_drop_event_votes",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1784952987146,
+      "tag": "0005_add_approvals",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1784953002850,
+      "tag": "0006_drop_vetoes",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1784975834062,
+      "tag": "0007_admin_managed_users",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1785555476593,
+      "tag": "0008_game_library_cache",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1785578586719,
+      "tag": "0009_expansions_and_library",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1785578587719,
+      "tag": "0010_merge_manual_duplicates",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1785579671638,
+      "tag": "0011_game_copies",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1788410690908,
+      "tag": "0012_reset_bgg_search_cache",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1788582633816,
+      "tag": "0013_play_finishing_positions",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1788618695787,
+      "tag": "0014_event_available_games",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "6",
+      "when": 1788878004437,
+      "tag": "0015_nomination_interest",
+      "breakpoints": true
+    }
+  ]
+}

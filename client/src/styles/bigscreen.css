@@ -1,0 +1,446 @@
+/*
+ * Big screen mode.
+ *
+ * This is the only part of the app designed to be read from a sofa rather than
+ * held in a hand, so it ignores the app's light theme and sizes everything in
+ * viewport units: the same markup has to work on a laptop lid and a 55" TV.
+ *
+ * The animations live here as plain keyframes rather than Tailwind utilities
+ * because the sequence matters — several of them are triggered by a phase
+ * class the director sets, and reading the whole timeline in one file is worth
+ * more than co-locating each with its element.
+ */
+
+.bs-root {
+  --bs-ink: oklch(0.98 0 0);
+  --bs-dim: oklch(0.72 0.02 260);
+  --bs-live: oklch(0.78 0.17 145);
+  --bs-risk: oklch(0.72 0.19 55);
+  --bs-out: oklch(0.65 0.24 25);
+  --bs-gold: oklch(0.85 0.16 90);
+
+  position: fixed;
+  inset: 0;
+  /*
+   * `clip`, not `hidden`. The confetti and the light rays deliberately spill
+   * far outside this box, and `hidden` would make that spill a *scrollable*
+   * area — invisible, but real: focusing a control button then scrolls the
+   * whole presentation off the top of the screen and it never comes back.
+   * `clip` clips without ever creating a scrollport. `hidden` stays as the
+   * fallback for anything too old to know the keyword.
+   */
+  overflow: hidden;
+  overflow: clip;
+  color: var(--bs-ink);
+  background:
+    radial-gradient(120% 90% at 15% 0%, oklch(0.32 0.11 275) 0%, transparent 55%),
+    radial-gradient(110% 90% at 90% 15%, oklch(0.3 0.12 320) 0%, transparent 50%),
+    radial-gradient(130% 110% at 50% 110%, oklch(0.28 0.1 210) 0%, transparent 60%),
+    oklch(0.16 0.03 275);
+  font-variant-numeric: tabular-nums;
+}
+
+/* A slow parallax wash so a static voting screen never looks frozen. */
+.bs-root::before {
+  content: "";
+  position: absolute;
+  inset: -30%;
+  background:
+    radial-gradient(closest-side, oklch(0.55 0.16 300 / 0.28), transparent 70%) 20% 30% / 55% 55% no-repeat,
+    radial-gradient(closest-side, oklch(0.6 0.15 200 / 0.22), transparent 70%) 80% 70% / 60% 60% no-repeat;
+  animation: bs-drift 26s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes bs-drift {
+  from { transform: translate3d(-3%, -2%, 0) scale(1); }
+  to { transform: translate3d(4%, 3%, 0) scale(1.12); }
+}
+
+/* ---- Candidate cards ---- */
+
+.bs-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  overflow: clip;
+  border-radius: 1.2vmin;
+  border: 0.25vmin solid oklch(1 0 0 / 0.12);
+  background: oklch(0.22 0.03 275 / 0.72);
+  box-shadow: 0 1.5vmin 4vmin oklch(0 0 0 / 0.45);
+  backdrop-filter: blur(6px);
+  transition:
+    border-color 400ms ease,
+    box-shadow 400ms ease,
+    opacity 400ms ease,
+    transform 400ms cubic-bezier(0.2, 0.9, 0.3, 1.3);
+  animation: bs-settle 520ms cubic-bezier(0.2, 0.9, 0.3, 1.25) both;
+}
+
+/*
+ * Box art fills the card, with a scrim over it rather than a low opacity: the
+ * art should still read as the game's art from across a room, and the title
+ * still has a solid dark ground to sit on.
+ */
+.bs-card-art {
+  position: absolute;
+  inset: 0;
+  object-fit: cover;
+  width: 100%;
+  height: 100%;
+  opacity: 0.62;
+  filter: saturate(1.15);
+  mask-image: linear-gradient(to bottom, oklch(0 0 0), oklch(0 0 0 / 0.35) 88%, transparent);
+}
+
+.bs-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(
+    to bottom,
+    oklch(0.14 0.03 275 / 0.62) 0%,
+    oklch(0.14 0.03 275 / 0.28) 45%,
+    oklch(0.14 0.03 275 / 0.88) 100%
+  );
+  pointer-events: none;
+}
+
+.bs-card-lead {
+  border-color: oklch(0.78 0.17 145 / 0.75);
+  box-shadow:
+    0 0 0 0.35vmin oklch(0.78 0.17 145 / 0.25),
+    0 1.5vmin 4vmin oklch(0 0 0 / 0.5);
+}
+
+/* Anything on ≤1 vote is one advance away from being cut, and everyone in the
+   room should be able to feel that before it happens. */
+.bs-card-risk {
+  border-color: oklch(0.72 0.19 55 / 0.7);
+  animation: bs-settle 520ms cubic-bezier(0.2, 0.9, 0.3, 1.25) both,
+    bs-riskglow 2.4s ease-in-out 520ms infinite;
+}
+
+@keyframes bs-riskglow {
+  0%, 100% { box-shadow: 0 0 0 0 oklch(0.72 0.19 55 / 0.35), 0 1.5vmin 4vmin oklch(0 0 0 / 0.45); }
+  50% { box-shadow: 0 0 3vmin 0.4vmin oklch(0.72 0.19 55 / 0.4), 0 1.5vmin 4vmin oklch(0 0 0 / 0.45); }
+}
+
+/* Held breath: the verdict is in, these are the ones about to go. */
+.bs-card-doomed {
+  animation: bs-shake 340ms cubic-bezier(0.36, 0.07, 0.19, 0.97) infinite;
+  border-color: oklch(0.65 0.24 25 / 0.9);
+  z-index: 2;
+}
+
+.bs-card-spared {
+  opacity: 0.45;
+  filter: saturate(0.5);
+}
+
+@keyframes bs-shake {
+  0%, 100% { transform: translate3d(-0.35vmin, 0, 0) rotate(-0.4deg); }
+  50% { transform: translate3d(0.35vmin, 0, 0) rotate(0.4deg); }
+}
+
+/* The cut itself. */
+.bs-card-cut {
+  animation: bs-cut 1400ms cubic-bezier(0.55, 0, 0.85, 0.35) forwards;
+  z-index: 3;
+}
+
+@keyframes bs-cut {
+  0% { transform: scale(1) rotate(0); filter: none; opacity: 1; }
+  18% { transform: scale(1.06) rotate(-1deg); filter: brightness(1.6) saturate(0.4); }
+  30% { transform: scale(0.97) rotate(1.5deg); }
+  100% {
+    transform: translate3d(0, 14vmin, 0) scale(0.72) rotate(-7deg);
+    filter: grayscale(1) brightness(0.35) blur(3px);
+    opacity: 0;
+  }
+}
+
+.bs-stamp {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.bs-stamp span {
+  font-size: clamp(1.5rem, 4vmin, 4rem);
+  font-weight: 900;
+  letter-spacing: 0.3em;
+  padding: 0.4em 0.5em 0.4em 0.8em;
+  color: oklch(0.75 0.24 25);
+  border: 0.6vmin solid currentColor;
+  border-radius: 0.6vmin;
+  animation: bs-stamp 420ms cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+
+@keyframes bs-stamp {
+  0% { transform: scale(3) rotate(-24deg); opacity: 0; }
+  60% { transform: scale(0.92) rotate(-12deg); opacity: 1; }
+  100% { transform: scale(1) rotate(-12deg); opacity: 1; }
+}
+
+@keyframes bs-settle {
+  from { transform: translate3d(0, 2.5vmin, 0) scale(0.94); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+/*
+ * The column count is chosen for a wide screen, which is what this mode is
+ * for. Opened on a phone — someone will — that many columns leaves titles
+ * wrapping one word per line, so a portrait viewport overrides it.
+ */
+@media (max-aspect-ratio: 1 / 1) {
+  .bs-arena {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+/*
+ * Someone an admin added who hasn't signed in yet has no picture, and the
+ * app's default fallback chip is a near-white disc — which, inheriting this
+ * mode's near-white text, renders as a blank circle. Give it a dark ground and
+ * a size that scales with the avatar.
+ */
+.bs-root [data-slot="avatar-fallback"] {
+  background: oklch(0.34 0.05 275);
+  color: var(--bs-ink);
+  font-size: max(0.55rem, 1.5vmin);
+  font-weight: 700;
+}
+
+/* ---- Curtain ---- */
+
+.bs-curtain {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3vmin;
+  text-align: center;
+  background: oklch(0.13 0.03 275 / 0.82);
+  backdrop-filter: blur(10px);
+  animation: bs-fade 400ms ease both;
+}
+
+.bs-start {
+  animation: bs-breathe 2.8s ease-in-out infinite;
+}
+
+@keyframes bs-breathe {
+  0%, 100% { box-shadow: 0 0 0 0 oklch(0.85 0.16 90 / 0.5); }
+  60% { box-shadow: 0 0 0 2.5vmin oklch(0.85 0.16 90 / 0); }
+}
+
+/* ---- Vote counter ---- */
+
+.bs-votes {
+  display: inline-block;
+  animation: bs-pop 520ms cubic-bezier(0.2, 1.5, 0.4, 1) both;
+}
+
+@keyframes bs-pop {
+  0% { transform: scale(2.1); color: var(--bs-gold); }
+  70% { transform: scale(0.9); }
+  100% { transform: scale(1); }
+}
+
+.bs-bar {
+  transition: width 700ms cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+/* ---- Full-screen moments ---- */
+
+.bs-veil {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  /* Flex, not grid: the label has to sit directly above the reels rather than
+     each taking half the height of the screen. */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: oklch(0.1 0.03 275 / 0.55);
+  backdrop-filter: blur(2px);
+  animation: bs-fade 400ms ease both;
+  pointer-events: none;
+}
+
+@keyframes bs-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.bs-banner {
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: clamp(2rem, 8vmin, 9rem);
+  text-shadow: 0 0 6vmin oklch(0.7 0.2 300 / 0.8);
+  animation: bs-sweep 1900ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes bs-sweep {
+  0% { transform: translate3d(-120%, 0, 0) skewX(-14deg); opacity: 0; }
+  22% { transform: none; opacity: 1; }
+  78% { transform: none; opacity: 1; }
+  100% { transform: translate3d(120%, 0, 0) skewX(14deg); opacity: 0; }
+}
+
+/* ---- Drumroll reels ---- */
+
+.bs-reel {
+  position: relative;
+  overflow: hidden;
+  overflow: clip;
+  border-radius: 1.4vmin;
+  border: 0.3vmin solid oklch(1 0 0 / 0.18);
+  background: oklch(0.14 0.03 275 / 0.85);
+  box-shadow: inset 0 0 6vmin oklch(0 0 0 / 0.7);
+}
+
+.bs-reel-spin {
+  animation: bs-reelblur 120ms linear infinite alternate;
+}
+
+@keyframes bs-reelblur {
+  from { transform: translate3d(0, -0.6vmin, 0); filter: blur(0.15vmin); }
+  to { transform: translate3d(0, 0.6vmin, 0); filter: blur(0.35vmin); }
+}
+
+.bs-reel-lock {
+  animation: bs-reellock 700ms cubic-bezier(0.15, 1.5, 0.35, 1) both;
+}
+
+@keyframes bs-reellock {
+  0% { transform: translate3d(0, -4vmin, 0) scale(1.15); filter: brightness(2.2); }
+  100% { transform: none; filter: none; }
+}
+
+/* ---- Winner ---- */
+
+.bs-hero {
+  animation: bs-heroin 900ms cubic-bezier(0.16, 1.3, 0.3, 1) both;
+}
+
+@keyframes bs-heroin {
+  0% { transform: scale(0.3) rotate(-6deg); opacity: 0; filter: brightness(3); }
+  55% { transform: scale(1.06) rotate(1deg); opacity: 1; }
+  100% { transform: none; opacity: 1; filter: none; }
+}
+
+/*
+ * Light rays behind the winner, the one bit of pure theatre. Kept faint and
+ * tightly masked: they are a glow around the title, not a background the title
+ * has to compete with.
+ */
+.bs-rays {
+  position: absolute;
+  inset: -20%;
+  z-index: 0;
+  background: repeating-conic-gradient(
+    from 0deg,
+    oklch(0.85 0.16 90 / 0.09) 0deg 6deg,
+    transparent 6deg 18deg
+  );
+  mask-image: radial-gradient(closest-side, oklch(0 0 0) 5%, transparent 62%);
+  animation: bs-spin 22s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes bs-spin {
+  to { transform: rotate(360deg); }
+}
+
+.bs-title-glow {
+  text-shadow:
+    0 0 2vmin oklch(0.85 0.16 90 / 0.7),
+    0 0 8vmin oklch(0.85 0.16 90 / 0.35);
+  animation: bs-glow 3.5s ease-in-out infinite;
+}
+
+@keyframes bs-glow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.86; }
+}
+
+/* ---- Confetti ---- */
+
+.bs-confetti {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  overflow: hidden;
+  overflow: clip;
+  pointer-events: none;
+}
+
+.bs-confetti i {
+  position: absolute;
+  top: -8vh;
+  width: 0.9vmin;
+  height: 1.6vmin;
+  background: var(--c);
+  opacity: 0;
+  animation: bs-fall var(--dur) linear var(--delay) forwards;
+}
+
+@keyframes bs-fall {
+  0% { transform: translate3d(0, -10vh, 0) rotate(0deg); opacity: 1; }
+  100% { transform: translate3d(var(--drift), 112vh, 0) rotate(var(--spin)); opacity: 0.9; }
+}
+
+/* ---- Controls ---- */
+
+.bs-controls {
+  transition: opacity 500ms ease, transform 500ms ease;
+}
+
+.bs-controls[data-hidden="true"] {
+  opacity: 0;
+  transform: translate3d(0, 1.5vmin, 0);
+  pointer-events: none;
+}
+
+/*
+ * Reduced motion keeps every phase and every cue — a viewer still sees which
+ * games were cut and which won — it just stops the room from moving.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .bs-root::before,
+  .bs-rays,
+  .bs-card-risk,
+  .bs-card-doomed,
+  .bs-reel-spin,
+  .bs-start,
+  .bs-title-glow {
+    animation: none !important;
+  }
+  .bs-card,
+  .bs-votes,
+  .bs-banner,
+  .bs-hero,
+  .bs-stamp span,
+  .bs-reel-lock {
+    animation-duration: 1ms !important;
+  }
+  .bs-card-cut {
+    animation: bs-fadeout 600ms linear forwards;
+  }
+  @keyframes bs-fadeout {
+    to { opacity: 0; }
+  }
+  .bs-confetti { display: none; }
+}

@@ -1,0 +1,1 @@
+ALTER TABLE `play_players` ADD `position` integer;

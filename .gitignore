@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+client/dist/
+server/dist/
+*.tsbuildinfo
+
+# Environment / secrets
+.env
+.env.local
+*.local
+
+# SQLite database files
+*.db
+*.db-shm
+*.db-wal
+data/
+
+# Pre-deploy database snapshots (live on the VM, never in git)
+backups/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Claude Code: shared config is committed, personal overrides are not
+.claude/settings.local.json
+
+# Editor / OS
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Personal notes that stay out of the public repo (e.g. DEPLOY.local.md)
+*.local.md
