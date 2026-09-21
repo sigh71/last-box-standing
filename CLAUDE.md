@@ -61,26 +61,48 @@ coming.
   splits across two parallel tables.
 - **Picking is per session**, a three-phase state machine on
   `slots.pickState`: `nominating` → `eliminating` → `decided`, tracked with
-  `pickRound`. Anyone nominates games; each round every attendee approves up to
-  3 games they'd play (`MAX_APPROVALS`); advancing drops games with **≤1
-  approval**, never below `gameCount`. If nothing has ≤1 vote the round refuses
-  to advance and asks people to approve fewer — deliberately strict, no
-  auto-cut-lowest. On reaching `gameCount` it decides and survivors become
-  `plays`. Logic lives in `server/src/routes/picking.ts` +
-  `server/src/services/pick.ts`; the whole flow renders in
+  `pickRound`. Anyone nominates games; the voting in between belongs to the
+  session's **voting method**. On reaching `gameCount` it decides and survivors
+  become `plays` (`decideSession` in `server/src/services/pick.ts`). Routes are
+  in `server/src/routes/picking.ts`; the whole flow renders in
   `client/src/components/SessionCard.tsx`.
+- **Voting methods are pluggable — don't assume there's only one**
+  (`server/src/voting/`). Each session records its method in
+  `slots.votingMethod` (migration 0016), so it keeps the rules it was voted
+  under. A method is pure: given a `RoundContext` (each remaining game's votes
+  this round and net fist bumps) it returns the round's `Ballot`, a one-line
+  `summary`, and a `RoundPlan` — what advancing would cut, a `tie`, or
+  `waiting` before anyone has voted. The advance route executes the plan, and
+  the bundle sends it to the clients as `slot.voting`, so the phones and the
+  TV preview exactly what the server will do. **Clients render the method's
+  output rather than knowing rules**: no hard-coded "3", "≤1" or cut counts in
+  the UI. `Ballot` is a union on `kind`; approval is the only kind so far, and a
+  method with a different ballot (ranking, say) will need its own storage —
+  `approvals` only holds approvals. `listVotingMethods()` is there for when
+  sessions can choose.
+- **Approval elimination** is the method today
+  (`voting/approval-elimination.ts`). Each round everyone approves up to
+  `min(3, remaining − gameCount)` games, so the allowance falls 3 → 2 → 1 as
+  the field narrows. Advancing drops everything on **≤1 approval** (never below
+  `gameCount`); if nothing is that low it drops the **single lowest**, so every
+  round makes progress. Games tied on votes at the cut line are split by **net
+  fist bumps** (bumps − sad faces), and only a tie on both asks for a revote. No
+  votes at all is `waiting`: fist bumps never decide a cut on their own.
 - **A nomination belongs to whoever made it.** Only the nominator or an admin
   can withdraw one (`DELETE .../nominations/:gameId`, 403 otherwise); the X in
   `SessionCard` hides for everyone else. Somebody else pulling your game while
   you're still arguing for it is how a pick turns into a row. The expansion
   attach/detach routes on a nomination are *not* guarded this way yet.
 - **Thumbs are not votes** (`nomination_interest`, migration 0015). A stance of
-  `up`/`down` per person per nominated game, uncapped, and it touches the
-  elimination maths **not at all** — that stays the strict ≤1-approval rule.
-  Approvals (capped at 3) decide *which* games survive; this answers the
-  different question of who'd actually sit down to what, which is what you need
-  when a session runs two tables. Don't let it grow into a veto: the `vetoes`
-  table was that idea and migration 0006 dropped it. The composite FK to
+  `up`/`down` per person per nominated game, uncapped. Approvals decide *which*
+  games survive; this answers the different question of who'd actually sit
+  down to what, which is what you need when a session runs two tables. The one
+  place it touches the elimination is as a **tie-breaker**, and only where the
+  voting method says so — it never decides anything while approvals differ.
+  Stances can change right up to the press of advance; they're visible to
+  everyone, which is what makes that acceptable. Don't let it grow into a
+  veto: the `vetoes` table was that idea and migration 0006 dropped it. The
+  composite FK to
   `nominations(slot_id, game_id)` is load-bearing — withdraw a nomination and
   the stances cascade with it, so re-nominating starts clean. (Contrast
   `nomination_expansions`, which FKs slots and games separately and so *does*

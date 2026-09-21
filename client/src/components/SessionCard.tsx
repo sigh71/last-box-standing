@@ -24,7 +24,6 @@ import {
   deletePlay,
   deleteSession,
   fetchMe,
-  MAX_APPROVALS,
   removeNomination,
   reopenSession,
   startPicking,
@@ -77,14 +76,14 @@ export default function SessionCard({
     return winner ? firstName(winner) : null;
   };
 
-  const approveCount = (gameId: number) =>
-    slotApprovals.filter((a) => a.gameId === gameId).length;
   const voterCount = new Set(slotApprovals.map((a) => a.userId)).size;
-  // Strict rule: only games with <= 1 vote can be dropped this round, and never
-  // below the session's game count.
-  const droppable = remaining.filter((n) => approveCount(n.gameId) <= 1);
-  const willDrop = Math.min(droppable.length, remaining.length - slot.gameCount);
-  const canAdvance = willDrop > 0;
+  // The session's voting method owns the rules: how many you may approve this
+  // round, and what advancing would cut. Nothing here second-guesses it.
+  const voting = slot.voting;
+  const maxApprovals = voting?.ballot.kind === "approval" ? voting.ballot.maxApprovals : 0;
+  const plan = voting?.plan;
+  const atRisk = new Set(plan?.gameIds ?? []);
+  const canAdvance = plan?.outcome === "cut";
 
   const onError = (e: unknown) => setActionError((e as Error).message);
   const onOk = () => {
@@ -250,18 +249,17 @@ export default function SessionCard({
       {slot.pickState === "eliminating" && (
         <div className="flex flex-col gap-2">
           <p className="text-muted-foreground text-xs">
-            Approve the games you'd play (up to {MAX_APPROVALS}). {voterCount} of{" "}
-            {bundle.attendees.length} voted · down to {slot.gameCount}. Games with ≤1 vote drop.
+            {voting?.summary} · {voterCount} of {bundle.attendees.length} voted
           </p>
           <p className="text-muted-foreground/70 text-xs">
             Fist-bump anything you'd play and sad-face anything you wouldn't — that's not a vote,
-            it just shows who's up for what.
+            it shows who's up for what, and only ever breaks a tie.
           </p>
           {remaining.map((n) => {
             const game = gameById(n.gameId);
             const approvers = slotApprovals.filter((a) => a.gameId === n.gameId);
             const mine = myApprovals.has(n.gameId);
-            const atLimit = !mine && myApprovals.size >= MAX_APPROVALS;
+            const atLimit = !mine && myApprovals.size >= maxApprovals;
             return (
               <div
                 key={n.gameId}
@@ -274,7 +272,11 @@ export default function SessionCard({
                   type="button"
                   disabled={atLimit || m.approve.isPending}
                   onClick={() => m.approve.mutate(n.gameId)}
-                  title={atLimit ? `You've already approved ${MAX_APPROVALS}` : undefined}
+                  title={
+                    atLimit
+                      ? `You can approve ${maxApprovals} game${maxApprovals === 1 ? "" : "s"} this round`
+                      : undefined
+                  }
                   className={cn(
                     "flex items-center justify-between gap-2 rounded-md p-2 text-left transition-colors disabled:opacity-50",
                     mine ? undefined : atLimit ? "cursor-not-allowed" : "hover:bg-muted",
@@ -316,7 +318,7 @@ export default function SessionCard({
                       })}
                     </span>
                     <Badge
-                      variant={approvers.length <= 1 ? "outline" : "secondary"}
+                      variant={atRisk.has(n.gameId) ? "outline" : "secondary"}
                       className="text-[10px]"
                     >
                       {approvers.length}
@@ -324,7 +326,7 @@ export default function SessionCard({
                   </div>
                 </button>
                 {/* Outside the approve button — nesting buttons is invalid
-                    HTML. Still live once you've spent all three approvals,
+                    HTML. Still live once you've spent all your approvals,
                     which is exactly when "I'd still play it" is worth saying. */}
                 <div className="px-2 pb-2">
                   <InterestButtons
@@ -356,15 +358,28 @@ export default function SessionCard({
 
           {actionError && <p className="text-destructive text-xs">{actionError}</p>}
 
+          {plan?.outcome === "cut" && plan.decidedBy === "interest" && (
+            <p className="text-muted-foreground text-xs">
+              Tied on votes at the cut — fist bumps decide what goes.
+            </p>
+          )}
+          {plan?.outcome === "tie" && (
+            <p className="text-muted-foreground text-xs">
+              Tied on votes and fist bumps at the cut — someone needs to change their mind.
+            </p>
+          )}
+
           <Button
             size="sm"
             disabled={!canAdvance || m.advance.isPending}
             onClick={() => m.advance.mutate()}
           >
             <ChevronRight />
-            {canAdvance
-              ? `Drop ${willDrop} low game${willDrop === 1 ? "" : "s"}`
-              : "Every game has support — vote again"}
+            {plan?.outcome === "cut"
+              ? `Drop ${plan.gameIds.length} low game${plan.gameIds.length === 1 ? "" : "s"}`
+              : plan?.outcome === "tie"
+                ? "Tied — vote again"
+                : "Waiting for votes"}
           </Button>
         </div>
       )}

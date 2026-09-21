@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Approval, Nomination, PickState } from "@/lib/api";
+import type { Approval, Nomination, PickState, VotingView } from "@/lib/api";
 
 /**
  * Choreographs big screen mode.
@@ -31,6 +31,12 @@ export interface PickSnapshot {
   noms: Nomination[];
   /** Current round only, which is all the server sends. */
   approvals: Approval[];
+  /**
+   * The round as the session's voting method sees it, including what the next
+   * cut would be. Part of the snapshot so it lags with everything else: during
+   * a verdict it still describes the cut that's playing out.
+   */
+  voting: VotingView | null;
 }
 
 export interface Production {

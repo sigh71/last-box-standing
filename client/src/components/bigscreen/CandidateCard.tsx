@@ -33,6 +33,9 @@ export default function CandidateCard({
   nominator?: Attendee;
 }) {
   const votes = approvers.length;
+  // Coloured by what the voting method says is about to go, not by a vote
+  // threshold: the rules are the method's, and the count alone can't tell.
+  const endangered = mood === "risk" || mood === "doomed" || mood === "cut";
   const art = game?.imageUrl ?? game?.thumbnailUrl;
 
   return (
@@ -87,7 +90,7 @@ export default function CandidateCard({
                 key={votes}
                 className={cn(
                   "bs-votes text-[clamp(1.5rem,5vmin,5rem)] leading-none font-black",
-                  votes <= 1 ? "text-[var(--bs-risk)]" : "text-[var(--bs-live)]",
+                  endangered ? "text-[var(--bs-risk)]" : "text-[var(--bs-live)]",
                 )}
               >
                 {votes}
@@ -97,7 +100,7 @@ export default function CandidateCard({
               <div
                 className={cn(
                   "bs-bar h-full rounded-full",
-                  votes <= 1 ? "bg-[var(--bs-risk)]" : "bg-[var(--bs-live)]",
+                  endangered ? "bg-[var(--bs-risk)]" : "bg-[var(--bs-live)]",
                 )}
                 style={{ width: `${voterCount > 0 ? (votes / voterCount) * 100 : 0}%` }}
               />

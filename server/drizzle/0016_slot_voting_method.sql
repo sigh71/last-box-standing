@@ -1,0 +1,1 @@
+ALTER TABLE `slots` ADD `voting_method` text DEFAULT 'approval-elimination' NOT NULL;
