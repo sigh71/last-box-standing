@@ -24,9 +24,15 @@ const app = new Hono<{ Variables: AuthVariables }>();
 // ---- API ----
 const api = new Hono<{ Variables: AuthVariables }>();
 
+// The release version lives in the root package.json (see "Releases" in the
+// README), so /health says which release a server is actually running.
+const version: string = JSON.parse(
+  readFileSync(fileURLToPath(new URL("../../package.json", import.meta.url)), "utf8"),
+).version;
+
 // `watchers` is the number of open live-update streams — the quickest way to
 // tell a proxy that's swallowing SSE from a client that never connected.
-api.get("/health", (c) => c.json({ status: "ok", watchers: watcherCount() }));
+api.get("/health", (c) => c.json({ status: "ok", version, watchers: watcherCount() }));
 
 api.use("*", authMiddleware);
 api.route("/auth", authRoutes);

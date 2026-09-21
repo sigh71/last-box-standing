@@ -251,3 +251,12 @@ last 10 kept), then `docker compose up -d --build`. See the README for setup.
 The server's `.env` is **not** in git and survives deploys; changing it needs
 `docker compose up -d` to recreate the container. Pull requests run the
 typecheck and build only.
+
+**Releases are semver, cut with `npm version <patch|minor|major>` then
+`git push --follow-tags`** (README → Releases). The root `package.json` is the
+only version: the workspaces deliberately have none, and `/api/health`
+reports it. Pushing a `v*.*.*` tag runs `release.yml`, which refuses a tag
+that doesn't match `package.json` and publishes a GitHub Release. Deploys
+still follow `main`, not tags. Major means a self-hoster has to act by hand
+(new required env var, compose change); a migration that applies itself on
+startup is minor.
