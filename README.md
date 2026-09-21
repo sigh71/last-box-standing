@@ -9,6 +9,8 @@ session is down to its game — or two, when the group splits across tables.
 Built for one group of about six people. It's invite-only: an admin adds
 people by email and they sign in with Google.
 
+![A weekend with three sessions: Friday and Saturday mid-vote, Sunday still taking nominations](docs/screenshots/weekend.webp)
+
 ## Features
 
 - **Weekends and sessions** — a Friday-to-Monday weekend, with sessions on each
@@ -23,6 +25,35 @@ people by email and they sign in with Google.
   expansions attach to their base game and widen its player count. Track who
   owns which copy and who has it.
 - **Results** — optionally record finishing order for each play.
+
+## In action
+
+### Voting from your phone
+
+<img src="docs/screenshots/phone-voting.webp" width="320" alt="A session on a phone: approve up to three games, and fist-bump the ones you'd sit down to">
+
+Each round, tick up to three games you'd play. The fist bump and sad face
+don't count as votes; they show who'd actually sit down to what, which is how
+a two-game session works out who goes to which table.
+
+### Big screen mode
+
+Put the session on the TV and run the elimination from there while everyone
+votes on their phones. Votes land live:
+
+![Round 1 on the big screen: eight games with their vote counts](docs/screenshots/big-screen-round.webp)
+
+Each cut gets its moment:
+
+![Two games stamped OUT as the round is cut](docs/screenshots/big-screen-cut.webp)
+
+And the reveal shows who fist-bumped each winner, so the room can split across
+the two tables:
+
+![The winners: Brass: Birmingham and Ark Nova with Marine Worlds, with the people who want to play each](docs/screenshots/big-screen-winners.webp)
+
+The box art and avatars here are placeholders drawn for the demo; the real app
+shows art from BoardGameGeek and people's Google profile pictures.
 
 ## Stack
 
