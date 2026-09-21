@@ -183,6 +183,33 @@ migration runs. It's off until you configure it under
 | Secret | `DEPLOY_SSH_KEY` | private key for that user |
 | Secret | `DEPLOY_SSH_PORT` | *(optional)* if not 22 |
 
+## Releases
+
+Versions follow [semver](https://semver.org), read from the point of view of
+someone self-hosting it:
+
+- **Major:** upgrading needs you to do something by hand, like a new or
+  renamed required setting in `.env` or a change to `docker-compose.yml`.
+- **Minor:** new features. Database migrations included: they apply
+  themselves when the server starts.
+- **Patch:** fixes only.
+
+The version lives in the root `package.json`, and `GET /api/health` reports
+the one a server is running. To cut a release from an up-to-date, clean `main`:
+
+```bash
+npm version minor       # or patch / major: bumps package.json, commits, tags
+git push --follow-tags  # pushes the commit and the tag together
+```
+
+Pushing the tag runs [`.github/workflows/release.yml`](.github/workflows/release.yml),
+which checks the tag matches `package.json`, typechecks, and publishes a
+[GitHub Release](../../releases) with notes generated from the merged pull
+requests.
+
+Going back to an older release is only safe if no migrations landed in
+between. Migrations only run forward, so restore a backup instead.
+
 ## Project layout
 
 ```
