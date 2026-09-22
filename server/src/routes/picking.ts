@@ -19,6 +19,7 @@ import {
 } from "../services/games.js";
 import { bggErrorResponse } from "../services/bgg.js";
 import { decideSession } from "../services/pick.js";
+import { roundContext, votingMethodFor } from "../voting/index.js";
 import { publish } from "../services/live.js";
 
 /**
@@ -166,10 +167,11 @@ router.delete("/slots/:slotId/nominations/:gameId", (c) => {
  * Set ("up"/"down") or clear (null) the current user's stance on a nominated
  * game.
  *
- * This is not a vote and does not touch the elimination maths: approvals are
- * capped at three and decide *which* games survive, while this is uncapped and
- * says who would play what — which is what you need when a session runs two
- * tables and somebody has to work out who goes where. The client sends the
+ * This is not a vote: approvals are capped and decide *which* games survive,
+ * while this is uncapped and says who would play what — which is what you need
+ * when a session runs two tables and somebody has to work out who goes where.
+ * The one place it reaches the elimination is as a tie-breaker, and only where
+ * the voting method says so (see `server/src/voting/`). The client sends the
  * stance it wants rather than a toggle, so two quick taps can't race into a
  * state nobody chose.
  */
@@ -241,9 +243,7 @@ router.post("/slots/:slotId/start", (c) => {
   return c.json({ ok: true });
 });
 
-// ---- Eliminating: approve games you'd play (up to 3), then advance ----
-
-const MAX_APPROVALS = 3;
+// ---- Voting: the session's method sets the ballot and decides each round ----
 
 /** Toggle the current user's approval of a game for the current round. */
 router.put("/slots/:slotId/approve", async (c) => {
@@ -252,6 +252,11 @@ router.put("/slots/:slotId/approve", async (c) => {
   if (!slot) return c.json({ error: "Session not found" }, 404);
   if (slot.pickState !== "eliminating") {
     return c.json({ error: "This session isn't in a voting round" }, 409);
+  }
+
+  const ballot = votingMethodFor(slot).ballot(roundContext(slot));
+  if (ballot.kind !== "approval") {
+    return c.json({ error: "This session doesn't vote by approval" }, 409);
   }
 
   const { gameId } = await c.req.json<{ gameId?: number }>();
@@ -282,8 +287,11 @@ router.put("/slots/:slotId/approve", async (c) => {
     return c.json({ approved: false });
   }
 
-  if (mine.length >= MAX_APPROVALS) {
-    return c.json({ error: `You can approve at most ${MAX_APPROVALS} games` }, 400);
+  // The allowance can't move mid-round (nothing is eliminated until the round
+  // advances), so approvals already cast never exceed it.
+  if (mine.length >= ballot.maxApprovals) {
+    const n = ballot.maxApprovals;
+    return c.json({ error: `You can approve ${n} game${n === 1 ? "" : "s"} this round` }, 400);
   }
   db.insert(approvals)
     .values({ slotId, round: slot.pickRound, userId, gameId })
@@ -300,58 +308,28 @@ router.post("/slots/:slotId/advance", (c) => {
     return c.json({ error: "This session isn't in a voting round" }, 409);
   }
 
-  const remaining = remainingNominations(slotId);
-  const target = slot.gameCount;
-  const roundApprovals = db
-    .select()
-    .from(approvals)
-    .where(and(eq(approvals.slotId, slotId), eq(approvals.round, slot.pickRound)))
-    .all();
-
-  const votes = new Map<number, number>();
-  for (const a of roundApprovals) {
-    if (remaining.some((n) => n.gameId === a.gameId)) {
-      votes.set(a.gameId, (votes.get(a.gameId) ?? 0) + 1);
-    }
+  const ctx = roundContext(slot);
+  const plan = votingMethodFor(slot).plan(ctx);
+  if (plan.outcome === "waiting") {
+    return c.json({ error: "Nobody has voted this round yet." }, 409);
+  }
+  if (plan.outcome === "tie") {
+    return c.json({ error: "Tied on votes and fist bumps at the cut line — vote again." }, 409);
   }
 
-  // Games with 1 vote or less are dropped, lowest first.
-  const losers = remaining
-    .map((n) => ({ gameId: n.gameId, v: votes.get(n.gameId) ?? 0 }))
-    .filter((x) => x.v <= 1)
-    .sort((a, b) => a.v - b.v || a.gameId - b.gameId);
-
-  if (losers.length === 0) {
-    return c.json(
-      { error: "Every game still has 2+ votes — approve fewer games, then advance." },
-      400,
-    );
-  }
-
-  const maxDrop = remaining.length - target;
-  let toDrop = losers;
-  if (losers.length > maxDrop) {
-    // Dropping them all would fall below the target; drop only the lowest,
-    // and refuse an arbitrary cut when the boundary is tied.
-    if (losers[maxDrop - 1]!.v === losers[maxDrop]!.v) {
-      return c.json({ error: "Tie at the cut line — vote again to break it." }, 409);
-    }
-    toDrop = losers.slice(0, maxDrop);
-  }
-
-  for (const l of toDrop) {
+  for (const gameId of plan.gameIds) {
     db.update(nominations)
       .set({ eliminatedRound: slot.pickRound })
-      .where(and(eq(nominations.slotId, slotId), eq(nominations.gameId, l.gameId)))
+      .where(and(eq(nominations.slotId, slotId), eq(nominations.gameId, gameId)))
       .run();
   }
 
-  if (remaining.length - toDrop.length <= target) {
+  if (ctx.contenders.length - plan.gameIds.length <= slot.gameCount) {
     decideSession(slotId);
   } else {
     db.update(slots).set({ pickRound: slot.pickRound + 1 }).where(eq(slots.id, slotId)).run();
   }
-  return c.json({ ok: true, eliminated: toDrop.map((l) => l.gameId) });
+  return c.json({ ok: true, eliminated: plan.gameIds, decidedBy: plan.decidedBy });
 });
 
 // ---- Reopen (undo a decision / restart nominating) ----

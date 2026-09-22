@@ -105,6 +105,13 @@ export const slots = sqliteTable("slots", {
     .notNull()
     .default("nominating"),
   pickRound: integer("pick_round").notNull().default(0),
+  /**
+   * Which voting method decides this session (`server/src/voting/`). Stored
+   * per session rather than assumed, so a session keeps the rules it was
+   * voted under when other methods arrive. Not an enum: the registry is the
+   * list of valid ids, and an unknown one fails loudly there.
+   */
+  votingMethod: text("voting_method").notNull().default("approval-elimination"),
   sortOrder: integer("sort_order").notNull().default(0),
 });
 

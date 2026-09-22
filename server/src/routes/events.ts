@@ -22,6 +22,7 @@ import { createEvent, eachDay } from "../services/events.js";
 import { activeUserIds } from "../services/users.js";
 import { effectivePlayerRange } from "../services/games.js";
 import { publish, subscribe } from "../services/live.js";
+import { votingView } from "../voting/index.js";
 
 const router = new Hono<{ Variables: AuthVariables }>();
 router.use("*", requireAuth);
@@ -181,7 +182,9 @@ router.get("/:id", (c) => {
 
   return c.json({
     event,
-    slots: slotRows,
+    // `voting` is the current round as the session's voting method sees it (null
+    // unless it's voting): its ballot, its rules, and what advancing would cut.
+    slots: slotRows.map((s) => ({ ...s, voting: votingView(s) })),
     attendees,
     // Empty means "no shortlist" — the picker then offers the whole library.
     availableGameIds,

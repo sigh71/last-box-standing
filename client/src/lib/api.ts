@@ -46,7 +46,31 @@ export interface Slot {
   gameCount: number;
   pickState: PickState;
   pickRound: number;
+  /** Which voting method decides this session; see `server/src/voting/`. */
+  votingMethod: string;
+  /** The current round, as the voting method sees it; null unless voting. */
+  voting: VotingView | null;
   sortOrder: number;
+}
+
+/**
+ * What a person fills in this round. Switch on `kind`: approval is the only
+ * one so far, but a session's voting method decides, so don't assume it.
+ */
+export type Ballot = { kind: "approval"; maxApprovals: number };
+
+/** What advancing the round would do right now. Mirrors the server's type. */
+export type RoundPlan =
+  | { outcome: "cut"; gameIds: number[]; decidedBy: "votes" | "interest" }
+  | { outcome: "tie"; gameIds: number[] }
+  | { outcome: "waiting"; gameIds: number[] };
+
+export interface VotingView {
+  method: string;
+  ballot: Ballot;
+  /** This round's rules in one short line. */
+  summary: string;
+  plan: RoundPlan;
 }
 
 export interface Game {
@@ -111,9 +135,9 @@ export interface Approval {
 export type Stance = "up" | "down";
 
 /**
- * Where one person stands on one nominated game. Uncapped, and it changes
- * nothing about the elimination — approvals decide which games survive, this
- * says who would actually sit down to them.
+ * Where one person stands on one nominated game. Uncapped, and not a vote —
+ * approvals decide which games survive, this says who would actually sit down
+ * to them. A voting method may use it to break a tie (`RoundPlan.decidedBy`).
  */
 export interface NominationInterest {
   slotId: number;
@@ -149,8 +173,6 @@ export interface EventBundle {
   interest: NominationInterest[];
   plays: Play[];
 }
-
-export const MAX_APPROVALS = 3;
 
 export interface BggSearchResult {
   bggId: number;

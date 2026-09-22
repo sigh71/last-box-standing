@@ -16,8 +16,10 @@ people by email and they sign in with Google.
 - **Weekends and sessions** — a Friday-to-Monday weekend, with sessions on each
   day that play one game, or two in parallel.
 - **Nominate, approve, eliminate** — anyone nominates; each round everyone
-  approves up to three games; games with one approval or fewer drop out until
-  the session is decided. Thumbs up/down show who'd actually sit down to what.
+  approves the games they'd play (up to three, fewer as the field narrows), and
+  the least-approved drop out until the session is decided. Fist bumps show
+  who'd actually sit down to what, and break ties. Voting methods are
+  pluggable, so other ways of deciding can sit alongside this one.
 - **Big screen mode** — project the vote on a TV while people vote from their
   phones, with a staged reveal for each cut and the winners.
 - **Live updates** — every open page refreshes as votes land (server-sent events).
@@ -32,9 +34,11 @@ people by email and they sign in with Google.
 
 <img src="docs/screenshots/phone-voting.webp" width="320" alt="A session on a phone: approve up to three games, and fist-bump the ones you'd sit down to">
 
-Each round, tick up to three games you'd play. The fist bump and sad face
-don't count as votes; they show who'd actually sit down to what, which is how
-a two-game session works out who goes to which table.
+Each round, tick the games you'd play: up to three at first, then two, then
+one as the field narrows, so the last rounds are a real choice. The fist bump
+and sad face don't count as votes; they show who'd actually sit down to what,
+which is how a two-game session works out who goes to which table. They only
+reach the elimination to settle a tie.
 
 ### Big screen mode
 

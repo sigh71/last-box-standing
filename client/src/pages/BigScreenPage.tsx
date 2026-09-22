@@ -94,6 +94,7 @@ export default function BigScreenPage() {
             gameCount: slot.gameCount,
             noms: bundle.nominations.filter((n) => n.slotId === slotId),
             approvals: bundle.approvals.filter((a) => a.slotId === slotId),
+            voting: slot.voting,
           }
         : null,
     [bundle, slot, slotId],
@@ -225,11 +226,11 @@ export default function BigScreenPage() {
     (gameId: number) => snapshot?.approvals.filter((a) => a.gameId === gameId).length ?? 0,
     [snapshot],
   );
-  const droppable = remaining.filter((n) => voteCount(n.gameId) <= 1).length;
-  const willDrop = snapshot ? Math.min(droppable, remaining.length - snapshot.gameCount) : 0;
+  // What advancing would do, straight from the session's voting method.
+  const plan = snapshot?.voting?.plan;
 
   const canAdvance =
-    !busy && !advance.isPending && snapshot?.pickState === "eliminating" && willDrop > 0;
+    !busy && !advance.isPending && snapshot?.pickState === "eliminating" && plan?.outcome === "cut";
   const canStart =
     !busy && !start.isPending && snapshot?.pickState === "nominating" && remaining.length > 0;
 
@@ -308,8 +309,8 @@ export default function BigScreenPage() {
       return "spared";
     }
     if (snapshot.pickState !== "eliminating") return "plain";
+    if (plan?.gameIds.includes(gameId)) return "risk";
     const v = voteCount(gameId);
-    if (v <= 1) return "risk";
     if (v === topVotes && topVotes > 1) return "lead";
     return "plain";
   };
@@ -349,7 +350,7 @@ export default function BigScreenPage() {
     snapshot.pickState === "nominating"
       ? "Add games from your phone"
       : snapshot.pickState === "eliminating"
-        ? `Approve up to 3 · down to ${snapshot.gameCount} · anything on 1 vote or fewer can go`
+        ? (snapshot.voting?.summary ?? "")
         : "Locked in";
 
   /** What the curtain says is waiting behind it. */
@@ -361,6 +362,18 @@ export default function BigScreenPage() {
         : snapshot.gameCount === 2
           ? "Decided — two tables"
           : "Decided";
+
+  /**
+   * Whether the cut playing out was settled on fist bumps. The held snapshot's
+   * plan is what the room saw before the press; if a stance changed in the
+   * moment before, the plan may not match what was actually cut, and then
+   * saying nothing is better than saying something wrong.
+   */
+  const cutOnFistBumps =
+    plan?.outcome === "cut" &&
+    plan.decidedBy === "interest" &&
+    plan.gameIds.length === doomed.size &&
+    plan.gameIds.every((id) => doomed.has(id));
 
   const revealing = production.phase === "reveal";
   const decided = snapshot.pickState === "decided" && production.phase === "live";
@@ -465,7 +478,9 @@ export default function BigScreenPage() {
       {/* ---- Moments ---- */}
       {production.phase === "verdict" && (
         <div className="pointer-events-none absolute inset-0 z-10 grid place-items-center">
-          <p className="bs-banner text-center">The votes are in</p>
+          <p className="bs-banner text-center">
+            {cutOnFistBumps ? "A tie — fist bumps decide" : "The votes are in"}
+          </p>
         </div>
       )}
 
@@ -572,9 +587,11 @@ export default function BigScreenPage() {
           ) : (
             <Pill onClick={goOn} disabled={!canAdvance} wide primary>
               <ChevronRight className="size-[2.2vmin] min-h-4 min-w-4" />
-              {willDrop > 0
-                ? `Cut ${willDrop} game${willDrop === 1 ? "" : "s"}`
-                : "Every game has support — vote again"}
+              {plan?.outcome === "cut"
+                ? `Cut ${plan.gameIds.length} game${plan.gameIds.length === 1 ? "" : "s"}`
+                : plan?.outcome === "tie"
+                  ? "Tied — vote again"
+                  : "Waiting for votes"}
             </Pill>
           )}
         </div>
