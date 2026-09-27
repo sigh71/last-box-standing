@@ -68,7 +68,7 @@ export default function AvailableGamesDialog({
 
         <SearchInput placeholder="Filter games…" value={query} onValueChange={setQuery} />
 
-        <div className="flex max-h-80 flex-col gap-1 overflow-y-auto">
+        <div className="flex max-h-80 flex-col gap-1 overflow-y-auto overscroll-contain">
           {isLoading && <p className="text-muted-foreground p-2 text-sm">Loading…</p>}
           {!isLoading && shown.length === 0 && (
             <p className="text-muted-foreground p-2 text-sm">No games match.</p>

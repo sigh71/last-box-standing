@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { addToLibrary, bggSearch, searchLibrary } from "@/lib/api";
+import { hasFinePointer } from "@/lib/utils";
 
 function useDebounced<T>(value: T, ms: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -89,7 +90,7 @@ export default function AddGameToLibraryDialog() {
 
           <TabsContent value="bgg" className="flex flex-col gap-3 pt-2">
             <SearchInput
-              autoFocus
+              autoFocus={hasFinePointer()}
               placeholder="Search BoardGameGeek — expansions too…"
               value={query}
               onValueChange={setQuery}
@@ -100,7 +101,7 @@ export default function AddGameToLibraryDialog() {
                 families like Munchkin run long; add a year to narrow it (e.g. “Munchkin 2011”).
               </p>
             )}
-            <div className="flex max-h-72 flex-col gap-1 overflow-y-auto">
+            <div className="flex max-h-72 flex-col gap-1 overflow-y-auto overscroll-contain">
               {search.isFetching && (
                 <p className="text-muted-foreground flex items-center gap-2 p-2 text-sm">
                   <Loader2 className="size-4 animate-spin" /> Searching…

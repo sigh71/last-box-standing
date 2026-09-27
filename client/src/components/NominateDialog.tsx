@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { bggSearch, nominate, searchLibrary, type BggGame } from "@/lib/api";
+import { hasFinePointer } from "@/lib/utils";
 
 function useDebounced<T>(value: T, ms: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -153,7 +154,7 @@ export default function NominateDialog({
 
           <TabsContent value="bgg" className="flex flex-col gap-3 pt-2">
             <SearchInput
-              autoFocus
+              autoFocus={hasFinePointer()}
               placeholder="Search your games, or BoardGameGeek…"
               value={query}
               onValueChange={setQuery}
@@ -166,7 +167,7 @@ export default function NominateDialog({
               </p>
             )}
 
-            <div className="flex max-h-80 flex-col gap-1 overflow-y-auto">
+            <div className="flex max-h-80 flex-col gap-1 overflow-y-auto overscroll-contain">
               {libraryGames.length > 0 && (
                 <>
                   <p className="text-muted-foreground flex items-center gap-1.5 px-2 pt-1 text-xs font-medium">
